@@ -1,0 +1,24 @@
+{
+  "name": "spida-webhook-lib",
+  "description": "npm module for the spida webhook-tool",
+  "version": "0.0.1",
+  "homepage": "https://github.com/spidasoftware/spida-webhook-lib",
+  "author": {
+    "name": "Jeremy Wentworth",
+    "email": "jeremy.wentworth@spidasoftware.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/spidasoftware/spida-webhook-lib.git"
+  },
+  "main": "spida-webhook-lib.js",
+  "engines": {
+    "node": "*"
+  },
+  "dependencies": {
+    "grunt": "^0.4.5",
+    "grunt-exec": "^0.4.6",
+    "jasmine-node": "^1.14.5"
+  },
+  "keywords": ["spida", "spidamin", "webhook"]
+}
