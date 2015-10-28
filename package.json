@@ -5,7 +5,8 @@
   "homepage": "https://github.com/spidasoftware/spida-webhook-lib",
   "author": {
     "name": "Jeremy Wentworth",
-    "email": "jeremy.wentworth@spidasoftware.com"
+    "email": "jeremy.wentworth@spidasoftware.com",
+    "url": "http://spidasoftware.com/"
   },
   "repository": {
     "type": "git",
