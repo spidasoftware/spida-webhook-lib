@@ -149,7 +149,10 @@ module.exports = {
 
     /**
      * Sends min project changes back to the min server.
-     * responseCallback is NOT required
+     * stdinJsonObj: json object passed to a webhook
+     * project: an object that conforms to the project schema:
+     *   https://github.com/spidasoftware/schema/blob/master/resources/v1/schema/spidamin/project/project.schema
+     * responseCallback: function to handle response (NOT required)
      */
     updateMinProject: function(stdinJsonObj, project, responseCallback){
         var parsedUrl = url.parse(stdinJsonObj.minServer);
@@ -176,7 +179,10 @@ module.exports = {
 
     /**
      * Adds project codes to the min project passed in.
-     * responseCallback is NOT required
+     * stdinJsonObj: json object passed to a webhook
+     * projectCodes: an array of objects that conform to the project_code schema:
+     *   https://github.com/spidasoftware/schema/blob/master/resources/v1/schema/spidamin/project/project_code.schema
+     * responseCallback: function to handle response (NOT required)
      */
     postProjectCodesBackToMin: function(stdinJsonObj, projectCodes, responseCallback){
         responseCallback = responseCallback ? responseCallback : this.minDefaultResponseCallback;
@@ -189,7 +195,9 @@ module.exports = {
 
     /**
      * Sets the status of the min project passed in.
-     * responseCallback is NOT required
+     * stdinJsonObj: json object passed to a webhook
+     * newStatus: event name string
+     * responseCallback: function to handle response (NOT required)
      */
     postStatusBackToMin: function(stdinJsonObj, newStatus, responseCallback){
         responseCallback = responseCallback ? responseCallback : this.minDefaultResponseCallback;
@@ -204,7 +212,10 @@ module.exports = {
 
     /**
      * Update form on min project passed in.
-     * responseCallback is NOT required
+     * stdinJsonObj: json object passed to a webhook
+     * dataForm: an object that conforms to the form schema:
+     *   https://github.com/spidasoftware/schema/blob/master/resources/v1/schema/general/form.schema
+     * responseCallback: function to handle response (NOT required)
      */
     postFormUpdateBackToMin: function(stdinJsonObj, dataForm, responseCallback){
         responseCallback = responseCallback ? responseCallback : this.minDefaultResponseCallback;
@@ -217,7 +228,10 @@ module.exports = {
 
     /**
      * Adds log messages to the min project passed in.
-     * responseCallback is NOT required
+     * stdinJsonObj: json object passed to a webhook
+     * logMessage: an object that conforms to the logMessage schema:
+     *   https://github.com/spidasoftware/schema/blob/master/resources/v1/schema/spidamin/project/log_message.schema
+     * responseCallback: function to handle response (NOT required)
      */
     postLogMessageBackToMin: function(stdinJsonObj, logMessage, responseCallback){
         responseCallback = responseCallback ? responseCallback : this.minDefaultResponseCallback;
