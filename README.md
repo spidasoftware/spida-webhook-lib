@@ -1,4 +1,4 @@
-# SPIDA Webhook Node NPM Module
+# SPIDA Webhook NPM Module
 
 ![](https://travis-ci.org/spidasoftware/webhooks-tool.svg?branch=master)
 [![npm version](https://badge.fury.io/js/spida-webhook-lib.svg)](https://badge.fury.io/js/spida-webhook-lib)
