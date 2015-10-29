@@ -1,6 +1,7 @@
 # SPIDA Webhook Node NPM Module
 
 ![](https://travis-ci.org/spidasoftware/webhooks-tool.svg?branch=master)
+[![npm version](https://badge.fury.io/js/spida-webhook-lib.svg)](https://badge.fury.io/js/spida-webhook-lib)
 
 This npm module can be used inside node webhook scripts called by the [webhooks-tool](https://github.com/spidasoftware/webhooks-tool)
 
