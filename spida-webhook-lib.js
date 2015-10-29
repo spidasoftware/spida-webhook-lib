@@ -8,17 +8,21 @@ module.exports = {
 
     /**
      * Log if extra logging.
+     *
+     * logMessage: string to log if debugging
      */
-    debugLog: function(s){
+    debugLog: function(logMessage){
         if(this.enableDebugLog){
-            console.log(s);
+            console.log(logMessage);
         }
     },
 
     /**
      * Convert stdin to a json object and pass into the callback.
+     *
+     * stdinHandler: after parsing stdin this method will be passed the parsed json object
      */
-    doWithStdinJson: function(callback){
+    doWithStdinJson: function(stdinHandler){
         var self = this;
         var stdin = process.stdin;
         var inputChunks = [];
@@ -33,12 +37,15 @@ module.exports = {
             var inputJSON = inputChunks.join("");
             var parsedStdin = JSON.parse(inputJSON);
             self.debugLog("parsedStdin: " + JSON.stringify(parsedStdin));
-            callback(parsedStdin);
+            stdinHandler(parsedStdin);
         });
     },
 
     /**
      * Finds the form in a min project.
+     *
+     * stdinJsonObj: json object passed to a webhook
+     * formName: the title of a min data form
      */
     getForm: function(stdinJsonObj, formName){
         var minProject = stdinJsonObj.payload.part;
@@ -55,6 +62,10 @@ module.exports = {
 
     /**
      * Finds the value of the field in a form in a min project.
+     *
+     * stdinJsonObj: json object passed to a webhook
+     * formName: the title of a min data form
+     * fieldName: the min form field label
      */
     getFormFieldVal: function(stdinJsonObj, formName, fieldName){
         var form = this.getForm(stdinJsonObj, formName);
@@ -65,9 +76,10 @@ module.exports = {
 
     /**
      * Makes an http request.
-     * opts = node request options plus xBody and xResponseCallback
-     * xResponseCallback and xBody are NOT required
-     * https://nodejs.org/api/http.html#http_http_request_options_callback
+     *
+     * opts: node request options plus xBody and xResponseCallback
+     *       https://nodejs.org/api/http.html#http_http_request_options_callback
+     *       xResponseCallback and xBody are NOT required
      */
     httpRequest: function(opts){
         console.log("HTTP " + opts.method + " request to " + this.getUrlFromRequestOptions(opts));
@@ -107,6 +119,8 @@ module.exports = {
 
     /**
      * Utility to concat request options into URL.
+     *
+     * opts: node request options object
      */
     getUrlFromRequestOptions: function(opts){
         return opts.protocol + "//" + opts.hostname + ":" + opts.port + opts.path;
@@ -115,6 +129,9 @@ module.exports = {
     /**
      * Default HTTP response handler.  This is used if you 
      * don't pass a response handler to the methods in this library.
+     *
+     * responseObj: a node http response object
+     * responseBody: the string body of the response
      */
     defaultResponseCallback: function(responseObj, responseBody){
         if(responseObj.statusCode === 200){
@@ -130,6 +147,9 @@ module.exports = {
     /**
      * Default HTTP response handler for SPIDAmin.  This is used if you 
      * don't pass a response handler to the methods in this library.
+     *
+     * responseObj: a node http response object
+     * responseBody: the string body of the response
      */
     minDefaultResponseCallback: function(responseObj, responseBody){
         if(responseObj.statusCode === 200){
@@ -149,6 +169,7 @@ module.exports = {
 
     /**
      * Sends min project changes back to the min server.
+     *
      * stdinJsonObj: json object passed to a webhook
      * project: an object that conforms to the project schema:
      *   https://github.com/spidasoftware/schema/blob/master/resources/v1/schema/spidamin/project/project.schema
@@ -179,8 +200,9 @@ module.exports = {
 
     /**
      * Adds project codes to the min project passed in.
+     *
      * stdinJsonObj: json object passed to a webhook
-     * projectCodes: an array of objects that conform to the project_code schema:
+     * projectCodes: an array of objects that conform to the project_code schema
      *   https://github.com/spidasoftware/schema/blob/master/resources/v1/schema/spidamin/project/project_code.schema
      * responseCallback: function to handle response (NOT required)
      */
@@ -195,6 +217,7 @@ module.exports = {
 
     /**
      * Sets the status of the min project passed in.
+     *
      * stdinJsonObj: json object passed to a webhook
      * newStatus: event name string
      * responseCallback: function to handle response (NOT required)
@@ -212,8 +235,9 @@ module.exports = {
 
     /**
      * Update form on min project passed in.
+     *
      * stdinJsonObj: json object passed to a webhook
-     * dataForm: an object that conforms to the form schema:
+     * dataForm: an object that conforms to the form schema
      *   https://github.com/spidasoftware/schema/blob/master/resources/v1/schema/general/form.schema
      * responseCallback: function to handle response (NOT required)
      */
@@ -228,8 +252,9 @@ module.exports = {
 
     /**
      * Adds log messages to the min project passed in.
+     *
      * stdinJsonObj: json object passed to a webhook
-     * logMessage: an object that conforms to the logMessage schema:
+     * logMessage: an object that conforms to the logMessage schema
      *   https://github.com/spidasoftware/schema/blob/master/resources/v1/schema/spidamin/project/log_message.schema
      * responseCallback: function to handle response (NOT required)
      */
