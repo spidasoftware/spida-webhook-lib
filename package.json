@@ -1,11 +1,11 @@
 {
   "name": "spida-webhook-lib",
   "description": "npm module for the spida webhook-tool",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "homepage": "https://github.com/spidasoftware/spida-webhook-lib",
   "author": {
-    "name": "Jeremy Wentworth",
-    "email": "jeremy.wentworth@spidasoftware.com",
+    "name": "SPIDA Developer",
+    "email": "developer@spidasoftware.com",
     "url": "http://spidasoftware.com/"
   },
   "repository": {
