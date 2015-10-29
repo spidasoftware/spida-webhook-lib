@@ -203,6 +203,19 @@ module.exports = {
     },
 
     /**
+     * Update form on min project passed in.
+     * responseCallback is NOT required
+     */
+    postFormUpdateBackToMin: function(stdinJsonObj, dataForm, responseCallback){
+        responseCallback = responseCallback ? responseCallback : this.minDefaultResponseCallback;
+        var project = {
+            id: stdinJsonObj.payload.part.id,
+            dataForms: [dataForm]
+        };
+        this.updateMinProject(stdinJsonObj, project, responseCallback);
+    },
+
+    /**
      * Adds log messages to the min project passed in.
      * responseCallback is NOT required
      */

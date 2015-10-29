@@ -200,6 +200,18 @@ describe('spida-webhook', function() {
         expect(webhook.updateMinProject).toHaveBeenCalled();
     });
 
+    it('postFormUpdateBackToMin', function() {
+        //setup
+        var stdinJsonObj = {payload:{part:{id:1}}};
+        spyOn(webhook, 'updateMinProject').andCallFake(function(){});
+        
+        //when
+        webhook.postFormUpdateBackToMin(stdinJsonObj, {});
+        
+        //then
+        expect(webhook.updateMinProject).toHaveBeenCalled();
+    });
+
     it('postLogMessageBackToMin', function() {
         //setup
         var stdinJsonObj = {payload:{part:{id:1}}, minServer:"http://test/test"};
