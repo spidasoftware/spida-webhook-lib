@@ -67,33 +67,36 @@ describe('spida-webhook', function() {
 
     it('getForm and getFormFieldVal', function() {
         //setup
-        var stdinJsonObj = {
-            payload:{
-                part:{
-                    dataForms:[{
-                        title: "form1",
-                        fields:{
-                            field1: "val1"
-                        }
-                    }]
+        var minProject = {
+            dataForms:[{
+                title: "form1",
+                fields:{
+                    field1: "val1",
+                    field2: ""
                 }
-            }
+            }]
         };
         
         //when
-        var val = webhook.getFormFieldVal(stdinJsonObj, "form1", "field1");
+        var val = webhook.getFormFieldVal(minProject, "form1", "field1");
         
         //then
         expect(val).toEqual("val1");
         
         //when
-        var val = webhook.getFormFieldVal(stdinJsonObj, "form1", "MISSING");
+        var val = webhook.getFormFieldVal(minProject, "form1", "field2");
+        
+        //then
+        expect(val).toEqual(""); //making sure empty string still get returned
+        
+        //when
+        var val = webhook.getFormFieldVal(minProject, "form1", "MISSING");
         
         //then
         expect(val).toEqual(null);
         
         //when
-        stdinJsonObj.payload.part.dataForms = undefined;
+        minProject.dataForms = undefined;
         
         //then
         expect(val).toEqual(null);
@@ -146,6 +149,31 @@ describe('spida-webhook', function() {
         expect(responseHandler).toHaveBeenCalledWith(responseObj, "{}");
     });
 
+    it('getMinProject', function() {
+        //setup
+        var stdinJsonObj = {
+          "apiToken": "admin@spidasoftware.com",
+          "minServer": "http://localhost:8888/"
+        };
+        var project = {id:1};
+        var responseHandler = jasmine.createSpy('responseHandler');
+        var calledHttpRequest = false;
+        spyOn(webhook, 'httpRequest').andCallFake(function(opts){
+            expect(opts.protocol).toEqual("http:")
+            expect(opts.hostname).toEqual("localhost")
+            expect(opts.port).toEqual("8888")
+            expect(opts.path).toEqual('/projectmanager/projectAPI/getProjects?apiToken=admin@spidasoftware.com&project_ids=[123]&details=true')
+            expect(opts.method).toEqual("GET")
+            calledHttpRequest = true;
+        });
+
+        //when
+        webhook.getMinProject(stdinJsonObj, 123, true, responseHandler);
+        
+        //then
+        expect(calledHttpRequest).toBeTruthy();
+    });
+
     it('updateMinProject', function() {
         //setup
         var stdinJsonObj = {
@@ -154,7 +182,7 @@ describe('spida-webhook', function() {
         };
         var project = {id:1};
         var responseHandler = jasmine.createSpy('responseHandler');
-        var calledPost = false;
+        var calledHttpRequest = false;
         spyOn(webhook, 'httpRequest').andCallFake(function(opts){
             expect(opts.protocol).toEqual("http:")
             expect(opts.hostname).toEqual("localhost")
@@ -165,14 +193,14 @@ describe('spida-webhook', function() {
             expect(opts.headers['Content-Length']).toEqual(31)
             expect(opts.xResponseCallback).toEqual(responseHandler)
             expect(opts.xBody).toEqual("project_json=%7B%22id%22%3A1%7D")
-            calledPost = true;
+            calledHttpRequest = true;
         });
 
         //when
         webhook.updateMinProject(stdinJsonObj, project, responseHandler);
         
         //then
-        expect(calledPost).toBeTruthy();
+        expect(calledHttpRequest).toBeTruthy();
     });
 
     it('postProjectCodesBackToMin', function() {

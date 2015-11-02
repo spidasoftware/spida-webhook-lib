@@ -19,6 +19,7 @@ module.exports = {
 
     /**
      * Convert stdin to a json object and pass into the callback.
+     * Modified version of https://gist.github.com/kristopherjohnson/5065599
      *
      * stdinHandler: after parsing stdin this method will be passed the parsed json object
      */
@@ -36,7 +37,7 @@ module.exports = {
         stdin.on('end', function () {
             var inputJSON = inputChunks.join("");
             var parsedStdin = JSON.parse(inputJSON);
-            self.debugLog("parsedStdin: " + JSON.stringify(parsedStdin));
+            self.debugLog("json passed into webhook: \n" + JSON.stringify(parsedStdin) + '\n');
             stdinHandler(parsedStdin);
         });
     },
@@ -44,33 +45,39 @@ module.exports = {
     /**
      * Finds the form in a min project.
      *
-     * stdinJsonObj: json object passed to a webhook
+     * minProject: min project json object
      * formName: the title of a min data form
      */
-    getForm: function(stdinJsonObj, formName){
-        var minProject = stdinJsonObj.payload.part;
-        if(!minProject.dataForms){
-            return null;
-        }
-        var formsFound = minProject.dataForms.filter(function(df){
-            return df.title === formName;
-        });
-        if(formsFound.length > 0){
-            return formsFound[0];
+    getForm: function(minProject, formName){
+        if(minProject.dataForms){
+            var formsFound = minProject.dataForms.filter(function(df){
+                return df.title === formName;
+            });
+            if(formsFound.length > 0){
+                return formsFound[0];
+            } else {
+                console.log("Missing form named '" + formName + "'.");
+            }
+        } else {
+            console.log("No forms on project.");
         }
     },
 
     /**
      * Finds the value of the field in a form in a min project.
      *
-     * stdinJsonObj: json object passed to a webhook
+     * minProject: min project json object
      * formName: the title of a min data form
      * fieldName: the min form field label
      */
-    getFormFieldVal: function(stdinJsonObj, formName, fieldName){
-        var form = this.getForm(stdinJsonObj, formName);
+    getFormFieldVal: function(minProject, formName, fieldName){
+        var form = this.getForm(minProject, formName);
         if(form){
-            return form.fields[fieldName];
+            if(form.fields.hasOwnProperty(fieldName)){
+                return form.fields[fieldName];
+            } else {
+                console.log("Missing field named '" + fieldName + "' on form named '" + formName + "'.");
+            }
         }
     },
 
@@ -94,10 +101,10 @@ module.exports = {
 
             responseObj.on('data', function (chunk) {
                 responseBody += chunk;
-                self.debugLog('BODY: ' + chunk);
             });
 
             responseObj.on('end', function() {
+                self.debugLog("RESPONSE BODY: " + responseBody + '\n');
                 if(opts.xResponseCallback){
                     opts.xResponseCallback(responseObj, responseBody);
                 } else {
@@ -139,7 +146,7 @@ module.exports = {
         } else {
             console.log('STATUS: ' + responseObj.statusCode);
             console.log('HEADERS: ' + JSON.stringify(responseObj.headers));
-            console.log("RESPONSE BODY: " + responseBody);
+            console.log("RESPONSE BODY: " + responseBody + '\n');
             throw new Error("Unable to successfully submit request.");
         }
     },
@@ -165,6 +172,33 @@ module.exports = {
             console.log("RESPONSE BODY: " + responseBody);
             throw new Error("Unable to update SPIDAmin project.");
         }
+    },
+
+    /**
+     * Get min project from the min server.
+     *
+     * stdinJsonObj: json object passed to a webhook
+     * projectId: the id number of the min project
+     * details: boolean value for details query param
+     * minProjectCallback: function to pass stdinJsonObj and minProject json object
+     */
+    getMinProject: function(stdinJsonObj, projectId, details, minProjectCallback){
+        var parsedUrl = url.parse(stdinJsonObj.minServer);
+
+        var requestOptions = {
+            protocol: parsedUrl.protocol,
+            hostname: parsedUrl.hostname,
+            port: parsedUrl.port,
+            path: '/projectmanager/projectAPI/getProjects?apiToken=' + stdinJsonObj.apiToken + 
+                  '&project_ids=[' + projectId + ']&details=' + !!details,
+            method: 'GET',
+            xResponseCallback: function(nodeResponse, responseBody){
+                var minProject = JSON.parse(responseBody).result.projects[0];
+                minProjectCallback(stdinJsonObj, minProject);
+            }
+        };
+
+        this.httpRequest(requestOptions);
     },
 
     /**
@@ -202,14 +236,15 @@ module.exports = {
      * Adds project codes to the min project passed in.
      *
      * stdinJsonObj: json object passed to a webhook
+     * projectId: the min project id number
      * projectCodes: an array of objects that conform to the project_code schema
      *   https://github.com/spidasoftware/schema/blob/master/resources/v1/schema/spidamin/project/project_code.schema
      * responseCallback: function to handle response (NOT required)
      */
-    postProjectCodesBackToMin: function(stdinJsonObj, projectCodes, responseCallback){
+    postProjectCodesBackToMin: function(stdinJsonObj, projectId, projectCodes, responseCallback){
         responseCallback = responseCallback ? responseCallback : this.minDefaultResponseCallback;
         var project = {
-            id: stdinJsonObj.payload.part.id,
+            id: projectId,
             projectCodes: projectCodes
         };
         this.updateMinProject(stdinJsonObj, project, responseCallback);
@@ -219,13 +254,14 @@ module.exports = {
      * Sets the status of the min project passed in.
      *
      * stdinJsonObj: json object passed to a webhook
+     * projectId: the min project id number
      * newStatus: event name string
      * responseCallback: function to handle response (NOT required)
      */
-    postStatusBackToMin: function(stdinJsonObj, newStatus, responseCallback){
+    postStatusBackToMin: function(stdinJsonObj, projectId, newStatus, responseCallback){
         responseCallback = responseCallback ? responseCallback : this.minDefaultResponseCallback;
         var project = {
-            id: stdinJsonObj.payload.part.id,
+            id: projectId,
             status: {
                 current: newStatus
             }
@@ -237,14 +273,15 @@ module.exports = {
      * Update form on min project passed in.
      *
      * stdinJsonObj: json object passed to a webhook
+     * projectId: the min project id number
      * dataForm: an object that conforms to the form schema
      *   https://github.com/spidasoftware/schema/blob/master/resources/v1/schema/general/form.schema
      * responseCallback: function to handle response (NOT required)
      */
-    postFormUpdateBackToMin: function(stdinJsonObj, dataForm, responseCallback){
+    postFormUpdateBackToMin: function(stdinJsonObj, projectId, dataForm, responseCallback){
         responseCallback = responseCallback ? responseCallback : this.minDefaultResponseCallback;
         var project = {
-            id: stdinJsonObj.payload.part.id,
+            id: projectId,
             dataForms: [dataForm]
         };
         this.updateMinProject(stdinJsonObj, project, responseCallback);
@@ -254,15 +291,16 @@ module.exports = {
      * Adds log messages to the min project passed in.
      *
      * stdinJsonObj: json object passed to a webhook
+     * projectId: the min project id number
      * logMessage: an object that conforms to the logMessage schema
      *   https://github.com/spidasoftware/schema/blob/master/resources/v1/schema/spidamin/project/log_message.schema
      * responseCallback: function to handle response (NOT required)
      */
-    postLogMessageBackToMin: function(stdinJsonObj, logMessage, responseCallback){
+    postLogMessageBackToMin: function(stdinJsonObj, projectId, logMessage, responseCallback){
         responseCallback = responseCallback ? responseCallback : this.minDefaultResponseCallback;
         var parsedUrl = url.parse(stdinJsonObj.minServer);
         var body = querystring.stringify({
-            'project_id' : stdinJsonObj.payload.part.id,
+            'project_id' : projectId,
             'log_message_json' : JSON.stringify(logMessage)
         });
         var requestOptions = {

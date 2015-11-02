@@ -1,7 +1,7 @@
 {
   "name": "spida-webhook-lib",
   "description": "npm module for the spida webhook-tool",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "homepage": "https://github.com/spidasoftware/spida-webhook-lib",
   "author": {
     "name": "SPIDA Developer",
