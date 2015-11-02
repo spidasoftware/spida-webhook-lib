@@ -135,7 +135,7 @@ describe('spida-webhook', function() {
             path: '/test',
             method: 'POST',
             headers: {},
-            xResponseCallback: responseHandler,
+            xResponseHandler: responseHandler,
             xBody: 'body'
         };
         
@@ -191,7 +191,7 @@ describe('spida-webhook', function() {
             expect(opts.method).toEqual("POST")
             expect(opts.headers['Content-Type']).toEqual('application/x-www-form-urlencoded')
             expect(opts.headers['Content-Length']).toEqual(31)
-            expect(opts.xResponseCallback).toEqual(responseHandler)
+            expect(opts.xResponseHandler).toEqual(responseHandler)
             expect(opts.xBody).toEqual("project_json=%7B%22id%22%3A1%7D")
             calledHttpRequest = true;
         });
