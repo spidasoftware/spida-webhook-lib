@@ -54,7 +54,7 @@ var hook = {
             var parsedStdin = JSON.parse(inputJSON);
             
             //check for logLevel override in scriptParam
-            hook.logLevel = JSON.parse(parsedStdin.scriptParam).logLevel || hook.logLevel;
+            hook.logLevel = (parsedStdin.scriptParam && JSON.parse(parsedStdin.scriptParam).logLevel) || hook.logLevel;
             
             hook.log.debug("json passed into webhook: \n" + JSON.stringify(parsedStdin) + '\n');
             stdinHandler(parsedStdin);
@@ -171,7 +171,7 @@ var hook = {
     defaultResponseHandler: function(responseObj, responseBody){
         if(responseObj.statusCode === 200){
             hook.log.info("Success.");
-            return true
+            return true;
         } else {
             hook.log.error('STATUS: ' + responseObj.statusCode);
             hook.log.error('HEADERS: ' + JSON.stringify(responseObj.headers));

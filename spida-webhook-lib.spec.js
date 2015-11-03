@@ -91,14 +91,15 @@ describe('spida-webhook', function() {
 
     it('doWithStdinJson', function() {
         //setup
+        expect(webhook.logLevel).toEqual("none"); //test default
         Object.defineProperty(process, 'stdin', {  
             value: {
                 resume:function(){},
                 setEncoding:function(){},
                 on:function(evt, func){
                     if(evt === 'data'){
-                        func("{");
-                        func("}");
+                        func('{"a":1,'); 
+                        func('"scriptParam":"{\\"logLevel\\":\\"debug\\"}"}');
                     } else if(evt === 'end'){
                         func();
                     }
@@ -111,7 +112,8 @@ describe('spida-webhook', function() {
         webhook.doWithStdinJson(done);
         
         //then
-        expect(done).toHaveBeenCalledWith(JSON.parse('{}'));
+        expect(done).toHaveBeenCalledWith(JSON.parse('{"a":1,"scriptParam":"{\\"logLevel\\":\\"debug\\"}"}'));
+        expect(webhook.logLevel).toEqual("debug");
     });
 
     it('getForm and getFormFieldVal', function() {
