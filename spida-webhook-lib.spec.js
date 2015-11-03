@@ -7,37 +7,86 @@ var originalStdin = process.stdin;
 var originalHttpRequest = webhook.httpRequest;
 var originalUpdateMinProject = webhook.updateMinProject;
 var reset = function(){
-   Object.defineProperty(process, 'stdin', { value: this.originalStdin });
-   webhook.httpRequest = originalHttpRequest;
-   webhook.updateMinProject = originalUpdateMinProject;
+    Object.defineProperty(process, 'stdin', { value: this.originalStdin });
+    webhook.httpRequest = originalHttpRequest;
+    webhook.updateMinProject = originalUpdateMinProject;
+    webhook.logLevel = 'none';
 };
 
 describe('spida-webhook', function() {
     afterEach(reset);
     beforeEach(reset);
 
-    it('debugLog enableDebugLog = true', function() {
+    it('logLevel none', function() {
         //setup
+        spyOn(console, 'error');
+        spyOn(console, 'info');
         spyOn(console, 'log');
-        webhook.enableDebugLog = true;
+        webhook.logLevel = 'none';
         
         //when
-        webhook.debugLog('test');
+        webhook.log.error('some error message');
+        webhook.log.info('some info message');
+        webhook.log.debug('some debug message');
 
         //then
-        expect(console.log).toHaveBeenCalled();
+        expect(console.error).not.toHaveBeenCalled();
+        expect(console.info).not.toHaveBeenCalled();
+        expect(console.log).not.toHaveBeenCalled();
     });
 
-    it('debugLog enableDebugLog = false', function() {
+    it('logLevel error', function() {
         //setup
+        spyOn(console, 'error');
+        spyOn(console, 'info');
         spyOn(console, 'log');
-        webhook.enableDebugLog = false;
+        webhook.logLevel = 'error';
         
         //when
-        webhook.debugLog('test');
-        
+        webhook.log.error('some error message');
+        webhook.log.info('some info message');
+        webhook.log.debug('some debug message');
+
         //then
+        expect(console.error).toHaveBeenCalled();
+        expect(console.info).not.toHaveBeenCalled();
         expect(console.log).not.toHaveBeenCalled();
+    });
+
+    it('logLevel info', function() {
+        //setup
+        spyOn(console, 'error');
+        spyOn(console, 'info');
+        spyOn(console, 'log');
+        webhook.logLevel = 'info';
+        
+        //when
+        webhook.log.error('some error message');
+        webhook.log.info('some info message');
+        webhook.log.debug('some debug message');
+
+        //then
+        expect(console.error).toHaveBeenCalled();
+        expect(console.info).toHaveBeenCalled();
+        expect(console.log).not.toHaveBeenCalled();
+    });
+
+    it('logLevel debug', function() {
+        //setup
+        spyOn(console, 'error');
+        spyOn(console, 'info');
+        spyOn(console, 'log');
+        webhook.logLevel = 'debug';
+        
+        //when
+        webhook.log.error('some error message');
+        webhook.log.info('some info message');
+        webhook.log.debug('some debug message');
+
+        //then
+        expect(console.error).toHaveBeenCalled();
+        expect(console.info).toHaveBeenCalled();
+        expect(console.log).toHaveBeenCalled();
     });
 
     it('doWithStdinJson', function() {

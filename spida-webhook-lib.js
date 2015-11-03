@@ -2,29 +2,44 @@ var url = require('url');
 var http = require('http');
 var querystring = require('querystring');
 
-module.exports = {
-
-    enableDebugLog: false,
+var hook = {
 
     /**
-     * Log if extra logging.
-     *
-     * logMessage: string to log if debugging
+     * This value can be changed in your script or by passing a logLevel 
+     * property in a json object in the webhook-tool 'Script Parameter' field.
      */
-    debugLog: function(logMessage){
-        if(this.enableDebugLog){
-            console.log(logMessage);
-        }
+    logLevel: "info", 
+
+    /**
+     * These are all the possible log levels.  These should not be modified.
+     */
+    LOG_LEVELS: ["none", "error", "info", "debug"],
+
+    /**
+     * A simple logger for logging at different levels.
+     * hook.log.error("printed if the log level is error only")
+     * hook.log.info("printed if the log level is info or debug")
+     * hook.log.debug("printed if the log level is error, info, or debug")
+     * NOTE: Nothing will be printed if log level is 'none'.
+     */
+    log: {
+        shouldLog: function(level){
+            return hook.LOG_LEVELS.indexOf(hook.logLevel.toLowerCase()) >= hook.LOG_LEVELS.indexOf(level);
+        },
+        error: function(){ if(this.shouldLog("error")){ console.error.apply(hook, arguments); }},
+        info: function(){ if(this.shouldLog("info")){ console.info.apply(hook, arguments); }},
+        debug: function(){ if(this.shouldLog("debug")){ console.log.apply(hook, arguments); }}
     },
 
     /**
      * Convert stdin to a json object and pass into the Handler.
      * Modified version of https://gist.github.com/kristopherjohnson/5065599
+     * NOTE: logLevel can be overridden if scriptParam JSON has a logLevel property.
+     *       example scriptParam: { "otherKey":"otherValue", "logLevel":"debug" }
      *
      * stdinHandler: after parsing stdin this method will be passed the parsed json object
      */
     doWithStdinJson: function(stdinHandler){
-        var self = this;
         var stdin = process.stdin;
         var inputChunks = [];
 
@@ -37,7 +52,11 @@ module.exports = {
         stdin.on('end', function () {
             var inputJSON = inputChunks.join("");
             var parsedStdin = JSON.parse(inputJSON);
-            self.debugLog("json passed into webhook: \n" + JSON.stringify(parsedStdin) + '\n');
+            
+            //check for logLevel override in scriptParam
+            hook.logLevel = JSON.parse(parsedStdin.scriptParam).logLevel || hook.logLevel;
+            
+            hook.log.debug("json passed into webhook: \n" + JSON.stringify(parsedStdin) + '\n');
             stdinHandler(parsedStdin);
         });
     },
@@ -56,10 +75,10 @@ module.exports = {
             if(formsFound.length > 0){
                 return formsFound[0];
             } else {
-                console.log("Missing form named '" + formName + "'.");
+                hook.log.info("Missing form named '" + formName + "'.");
             }
         } else {
-            console.log("No forms on project.");
+            hook.log.info("No forms on project.");
         }
     },
 
@@ -76,7 +95,7 @@ module.exports = {
             if(form.fields.hasOwnProperty(fieldName)){
                 return form.fields[fieldName];
             } else {
-                console.log("Missing field named '" + fieldName + "' on form named '" + formName + "'.");
+                hook.log.info("Missing field named '" + fieldName + "' on form named '" + formName + "'.");
             }
         }
     },
@@ -90,11 +109,11 @@ module.exports = {
      */
     httpRequest: function(opts){
         var self = this;
-        console.log("HTTP " + opts.method + " request to " + self.getUrlFromRequestOptions(opts));
-        this.debugLog(JSON.stringify(opts));
+        hook.log.info("HTTP " + opts.method + " request to " + self.getUrlFromRequestOptions(opts));
+        hook.log.debug("httpRequest options: "+JSON.stringify(opts));
         var req = http.request(opts, function(responseObj) {
-            self.debugLog('STATUS: ' + responseObj.statusCode);
-            self.debugLog('HEADERS: ' + JSON.stringify(responseObj.headers));
+            hook.log.debug('STATUS: ' + responseObj.statusCode);
+            hook.log.debug('HEADERS: ' + JSON.stringify(responseObj.headers));
 
             responseObj.setEncoding('utf8');
             var responseBody = "";
@@ -104,7 +123,7 @@ module.exports = {
             });
 
             responseObj.on('end', function() {
-                self.debugLog("RESPONSE BODY: " + responseBody + '\n');
+                hook.log.debug("RESPONSE BODY: " + responseBody + '\n');
                 if(opts.xResponseHandler){
                     opts.xResponseHandler(responseObj, responseBody);
                 } else {
@@ -113,7 +132,7 @@ module.exports = {
             });
         });
 
-        req.on('error', opts.xErrorHandler ? opts.xErrorHandler : self.defaultErrorHandler);
+        req.on('error', opts.xErrorHandler || self.defaultErrorHandler);
 
         if(opts.xBody){
             req.write(opts.xBody);
@@ -137,7 +156,7 @@ module.exports = {
      * error: the error that occurred making the request
      */
     defaultErrorHandler: function(error){
-        console.log("Error making request to server: " + error.message);
+        hook.log.error("Error making request to server: " + error.message);
         throw error;
     },
 
@@ -151,12 +170,12 @@ module.exports = {
      */
     defaultResponseHandler: function(responseObj, responseBody){
         if(responseObj.statusCode === 200){
-            console.log("Success.");
+            hook.log.info("Success.");
             return true
         } else {
-            console.log('STATUS: ' + responseObj.statusCode);
-            console.log('HEADERS: ' + JSON.stringify(responseObj.headers));
-            console.log("RESPONSE BODY: " + responseBody + '\n');
+            hook.log.error('STATUS: ' + responseObj.statusCode);
+            hook.log.error('HEADERS: ' + JSON.stringify(responseObj.headers));
+            hook.log.error("RESPONSE BODY: " + responseBody + '\n');
             throw new Error("Unable to successfully submit request.");
         }
     },
@@ -173,15 +192,15 @@ module.exports = {
         if(responseObj.statusCode === 200){
             var responseBodyObj = JSON.parse(responseBody);
             if(responseBodyObj.result && responseBodyObj.result.id){
-                console.log("Successfully updated SPIDAmin project.");
+                hook.log.info("Successfully updated SPIDAmin project " + responseBodyObj.result.id + ".");
                 return true
             } else {
-                console.log("RESPONSE BODY: " + responseBody);
+                hook.log.error("RESPONSE BODY: " + responseBody);
             }
         } else {
-            console.log('STATUS: ' + responseObj.statusCode);
-            console.log('HEADERS: ' + JSON.stringify(responseObj.headers));
-            console.log("RESPONSE BODY: " + responseBody);
+            hook.log.error('STATUS: ' + responseObj.statusCode);
+            hook.log.error('HEADERS: ' + JSON.stringify(responseObj.headers));
+            hook.log.error("RESPONSE BODY: " + responseBody);
             throw new Error("Unable to update SPIDAmin project.");
         }
     },
@@ -223,8 +242,10 @@ module.exports = {
      */
     updateMinProject: function(stdinJsonObj, project, responseHandler){
         var parsedUrl = url.parse(stdinJsonObj.minServer);
+        var projectJsonString = JSON.stringify(project);
+        hook.log.debug("projectJsonString: " + projectJsonString);
         var body = querystring.stringify({
-            'project_json' : JSON.stringify(project)
+            'project_json' : projectJsonString
         });
 
         var requestOptions = {
@@ -254,7 +275,7 @@ module.exports = {
      * responseHandler: function to handle response (NOT required)
      */
     postProjectCodesBackToMin: function(stdinJsonObj, projectId, projectCodes, responseHandler){
-        responseHandler = responseHandler ? responseHandler : this.minDefaultResponseHandler;
+        responseHandler = responseHandler || this.minDefaultResponseHandler;
         var project = {
             id: projectId,
             projectCodes: projectCodes
@@ -271,7 +292,7 @@ module.exports = {
      * responseHandler: function to handle response (NOT required)
      */
     postStatusBackToMin: function(stdinJsonObj, projectId, newStatus, responseHandler){
-        responseHandler = responseHandler ? responseHandler : this.minDefaultResponseHandler;
+        responseHandler = responseHandler || this.minDefaultResponseHandler;
         var project = {
             id: projectId,
             status: {
@@ -291,7 +312,7 @@ module.exports = {
      * responseHandler: function to handle response (NOT required)
      */
     postFormUpdateBackToMin: function(stdinJsonObj, projectId, dataForm, responseHandler){
-        responseHandler = responseHandler ? responseHandler : this.minDefaultResponseHandler;
+        responseHandler = responseHandler || this.minDefaultResponseHandler;
         var project = {
             id: projectId,
             dataForms: [dataForm]
@@ -309,11 +330,13 @@ module.exports = {
      * responseHandler: function to handle response (NOT required)
      */
     postLogMessageBackToMin: function(stdinJsonObj, projectId, logMessage, responseHandler){
-        responseHandler = responseHandler ? responseHandler : this.minDefaultResponseHandler;
+        responseHandler = responseHandler || this.minDefaultResponseHandler;
         var parsedUrl = url.parse(stdinJsonObj.minServer);
+        var logMessageJsonString = JSON.stringify(logMessage);
+        hook.log.debug("logMessageJsonString: " + logMessageJsonString);
         var body = querystring.stringify({
             'project_id' : projectId,
-            'log_message_json' : JSON.stringify(logMessage)
+            'log_message_json' : logMessageJsonString
         });
         var requestOptions = {
             protocol: parsedUrl.protocol,
@@ -333,3 +356,5 @@ module.exports = {
     }
 
 };
+
+module.exports = hook;
