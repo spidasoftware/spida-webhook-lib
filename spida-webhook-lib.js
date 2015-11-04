@@ -32,6 +32,15 @@ var hook = {
     },
 
     /**
+     * Pretty print a json object and return it as a string.
+     *
+     * jsonObject: the json object to format
+     */
+    formatJson: function(jsonObject){
+        return JSON.stringify(jsonObject, null, '    ');
+    },
+
+    /**
      * Convert stdin to a json object and pass into the Handler.
      * Modified version of https://gist.github.com/kristopherjohnson/5065599
      * NOTE: logLevel can be overridden if scriptParam JSON has a logLevel property.
