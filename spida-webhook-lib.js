@@ -101,11 +101,15 @@ var hook = {
     getFormFieldVal: function(minProject, formName, fieldName){
         var form = this.getForm(minProject, formName);
         if(form){
-            if(form.fields.hasOwnProperty(fieldName)){
-                return form.fields[fieldName];
-            } else {
-                hook.log.info("Missing field named '" + fieldName + "' on form named '" + formName + "'.");
+            var val = form.fields[fieldName];
+            if(!val){
+                if(form.fields.hasOwnProperty(fieldName)){
+                    hook.log.debug("No value for field named '" + fieldName + "' on form named '" + formName + "'.");
+                } else {
+                    hook.log.info("Missing field named '" + fieldName + "' on form named '" + formName + "'.");
+                }
             }
+            return val;
         }
     },
 
